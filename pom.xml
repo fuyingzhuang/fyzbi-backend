@@ -12,7 +12,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.ambition</groupId>
-    <artifactId>bi</artifactId>
+    <artifactId>fyzbi-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>homaPage</name>
     <properties>
