@@ -15,7 +15,7 @@ import lombok.EqualsAndHashCode;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author Ambition
@@ -31,7 +31,11 @@ public class Chart implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    @TableField("`goal`")
     private String goal;
+
+    @TableField("`name`")
+    private String name;
 
     @TableField("chartData")
     private String chartData;

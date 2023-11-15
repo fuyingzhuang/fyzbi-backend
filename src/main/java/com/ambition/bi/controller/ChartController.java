@@ -4,14 +4,20 @@ package com.ambition.bi.controller;
 import com.ambition.bi.common.BaseResponse;
 import com.ambition.bi.common.ErrorCode;
 import com.ambition.bi.common.ResultUtils;
+import com.ambition.bi.exception.ThrowUtils;
+import com.ambition.bi.model.dto.chart.ChartAddRequest;
+import com.ambition.bi.model.dto.chart.GenChartByAiRequest;
 import com.ambition.bi.model.dto.search.SearchRequest;
 import com.ambition.bi.model.entity.Chart;
 import com.ambition.bi.model.entity.User;
 import com.ambition.bi.service.ChartService;
 import com.ambition.bi.service.UserService;
+import com.ambition.bi.utils.ExcelUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -136,7 +142,7 @@ public class ChartController {
         QueryWrapper<Chart> chartQueryWrapper = new QueryWrapper<>();
         // 模糊搜索
         if (searchText != null && !"".equals(searchText)) {
-            chartQueryWrapper.like("goal", searchText);
+            chartQueryWrapper.like("name", searchText);
         }
         Page<Chart> chartPage = new Page<>();
         chartPage.setCurrent(currentPage);
@@ -152,6 +158,31 @@ public class ChartController {
         User loginUser = userService.getLoginUser(request);
         boolean remove = chartService.removeById(id);
         return ResultUtils.success(remove);
+    }
+
+    @PostMapping("/gen")
+    public BaseResponse<String> test(@RequestPart("file") MultipartFile file,
+                                     GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+        // 获取当前登录用户
+        User loginUser = userService.getLoginUser(request);
+        // 获取用户分析目标
+        String goal = genChartByAiRequest.getGoal();
+        // 获取用户想要的图表类型
+        String chartType = genChartByAiRequest.getChartType();
+        String name = genChartByAiRequest.getName();
+        // 校验
+        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "分析目标不能为空");
+        ThrowUtils.throwIf(StringUtils.isBlank(chartType), ErrorCode.PARAMS_ERROR, "图表类型不能为空");
+        ThrowUtils.throwIf(StringUtils.isBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "名称不能为空且长度不能超过100");
+        StringBuilder userInput = new StringBuilder();
+        userInput.append("你是一个数据分析师,接下来我会给你我的分析目标和原始分析,请告诉我分析结论");
+        userInput.append("分析目标：").append(goal).append("\n");
+        // 压缩后的数据
+        String dataString = ExcelUtils.excelToCsv(file);
+        userInput.append("数据：").append(dataString).append("\n");
+
+        return ResultUtils.success(userInput.toString());
+
     }
 
 }

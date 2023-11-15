@@ -1,12 +1,15 @@
 package com.ambition.bi.controller;
 
 import cn.hutool.core.io.FileUtil;
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.support.ExcelTypeEnum;
 import com.ambition.bi.common.BaseResponse;
 import com.ambition.bi.common.ErrorCode;
 import com.ambition.bi.common.ResultUtils;
 import com.ambition.bi.constant.FileConstant;
 import com.ambition.bi.exception.BusinessException;
 import com.ambition.bi.manager.CosManager;
+import com.ambition.bi.model.dto.chart.GenChartByAiRequest;
 import com.ambition.bi.model.dto.file.UploadFileRequest;
 import com.ambition.bi.model.entity.User;
 import com.ambition.bi.model.enums.FileUploadBizEnum;
@@ -14,15 +17,19 @@ import com.ambition.bi.service.UserService;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+import com.ambition.bi.utils.ExcelUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -106,4 +113,8 @@ public class FileController {
             }
         }
     }
+
+
+
+
 }
