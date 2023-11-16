@@ -5,6 +5,7 @@ import com.ambition.bi.common.BaseResponse;
 import com.ambition.bi.common.ErrorCode;
 import com.ambition.bi.common.ResultUtils;
 import com.ambition.bi.exception.ThrowUtils;
+import com.ambition.bi.manager.AiManager;
 import com.ambition.bi.model.dto.chart.ChartAddRequest;
 import com.ambition.bi.model.dto.chart.GenChartByAiRequest;
 import com.ambition.bi.model.dto.search.SearchRequest;
@@ -41,6 +42,10 @@ public class ChartController {
 
     @Resource
     private UserService userService;
+
+
+    @Resource
+    private AiManager aiManager;
 
     /**
      * 添加分析模板
@@ -152,6 +157,13 @@ public class ChartController {
     }
 
 
+    /**
+     * 删除图表信息
+     *
+     * @param id      图表id
+     * @param request 请求
+     * @return
+     */
     @GetMapping("/delete")
     public BaseResponse delete(@RequestParam("id") Integer id, HttpServletRequest request) {
         // 判断用户是否登陆
@@ -161,8 +173,8 @@ public class ChartController {
     }
 
     @PostMapping("/gen")
-    public BaseResponse<String> test(@RequestPart("file") MultipartFile file,
-                                     GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+    public BaseResponse<String> genChartByAI(@RequestPart("file") MultipartFile file,
+                                             GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
         // 获取用户分析目标
@@ -181,6 +193,7 @@ public class ChartController {
         String dataString = ExcelUtils.excelToCsv(file);
         userInput.append("数据：").append(dataString).append("\n");
 
+        String aiDataString = aiManager.doChat(1654785040361893889L, userInput.toString());
         return ResultUtils.success(userInput.toString());
 
     }
