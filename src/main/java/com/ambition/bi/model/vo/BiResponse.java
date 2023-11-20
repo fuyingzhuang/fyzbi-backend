@@ -8,7 +8,11 @@ import lombok.Data;
  * AI返回结果
  */
 @Data
-public class AiResponse {
+public class BiResponse {
     private String genChart;
+
     private String genResult;
+
+    private Long chartId;
+
 }
