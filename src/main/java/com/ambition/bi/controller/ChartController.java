@@ -11,6 +11,7 @@ import com.ambition.bi.exception.BusinessException;
 import com.ambition.bi.exception.ThrowUtils;
 import com.ambition.bi.manager.AiManager;
 import com.ambition.bi.model.dto.chart.ChartAddRequest;
+import com.ambition.bi.model.dto.chart.ChartQueryRequest;
 import com.ambition.bi.model.dto.chart.GenChartByAiRequest;
 import com.ambition.bi.model.dto.search.SearchRequest;
 import com.ambition.bi.model.entity.Chart;
@@ -24,6 +25,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
@@ -133,22 +135,23 @@ public class ChartController {
      * @param request       请求
      * @return 分页数据
      */
-    @GetMapping("/list")
-    public BaseResponse list(@RequestBody SearchRequest searchRequest,
+    @PostMapping("/list")
+    public BaseResponse<Page<Chart>> list(@RequestBody ChartQueryRequest searchRequest,
                              HttpServletRequest request) {
+        System.out.println("searchRequest = " + searchRequest);
         // 判断用户是否登陆
         User loginUser = userService.getLoginUser(request);
         // 获取用的的查询参数
-        String searchText = searchRequest.getSearchText();
-        Integer currentPage = searchRequest.getCurrentPage();
-        Integer pageSize = searchRequest.getPageSize();
+        String searchText = searchRequest.getName();
+        Long currentPage = searchRequest.getCurrent();
+        Long pageSize = searchRequest.getPageSize();
         // 判断当前页数是否合法
         if (currentPage == null || currentPage < 1) {
-            currentPage = 1;
+            currentPage = 1L;
         }
         // 判断每页显示条数是否合法
         if (pageSize == null || pageSize < 1) {
-            pageSize = 10;
+            pageSize = 10L;
         }
         QueryWrapper<Chart> chartQueryWrapper = new QueryWrapper<>();
         // 模糊搜索
