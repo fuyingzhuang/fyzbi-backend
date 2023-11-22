@@ -2,4 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ambition.bi.mapper.ChartMapper">
 
+
+<!--    动态SQL-->
+    <select id="queryChartData" parameterType="string" resultType="map">
+        ${querySql}
+    </select>
+
 </mapper>

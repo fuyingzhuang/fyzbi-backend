@@ -10,6 +10,7 @@ import com.ambition.bi.constant.CommonConstant;
 import com.ambition.bi.exception.BusinessException;
 import com.ambition.bi.exception.ThrowUtils;
 import com.ambition.bi.manager.AiManager;
+import com.ambition.bi.manager.RedisLimiterManager;
 import com.ambition.bi.model.dto.chart.ChartAddRequest;
 import com.ambition.bi.model.dto.chart.ChartQueryRequest;
 import com.ambition.bi.model.dto.chart.GenChartByAiRequest;
@@ -20,8 +21,10 @@ import com.ambition.bi.model.vo.BiResponse;
 import com.ambition.bi.service.ChartService;
 import com.ambition.bi.service.UserService;
 import com.ambition.bi.utils.ExcelUtils;
+import com.ambition.bi.utils.SqlUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -54,6 +57,9 @@ public class ChartController {
 
     @Resource
     private AiManager aiManager;
+
+    @Resource
+    private RedisLimiterManager redisLimiterManager;
 
     /**
      * 添加分析模板
@@ -128,6 +134,38 @@ public class ChartController {
         return ResultUtils.success(save);
     }
 
+
+    /**
+     * 获取查询包装类
+     *
+     * @param chartQueryRequest
+     * @return
+     */
+    private QueryWrapper<Chart> getQueryWrapper(ChartQueryRequest chartQueryRequest) {
+        QueryWrapper<Chart> queryWrapper = new QueryWrapper<>();
+        if (chartQueryRequest == null) {
+            return queryWrapper;
+        }
+        Long id = chartQueryRequest.getId();
+        String name = chartQueryRequest.getName();
+        String goal = chartQueryRequest.getGoal();
+        String chartType = chartQueryRequest.getChartType();
+        Long userId = chartQueryRequest.getUserId();
+        String sortField = chartQueryRequest.getSortField();
+        String sortOrder = chartQueryRequest.getSortOrder();
+
+        queryWrapper.eq(id != null && id > 0, "id", id);
+        queryWrapper.like(StringUtils.isNotBlank(name), "name", name);
+        queryWrapper.eq(StringUtils.isNotBlank(goal), "goal", goal);
+        queryWrapper.eq(StringUtils.isNotBlank(chartType), "chartType", chartType);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
+        queryWrapper.eq("isDelete", false);
+        queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
+                sortField);
+        return queryWrapper;
+    }
+
+
     /**
      * 分页 + 模糊查询
      *
@@ -137,32 +175,22 @@ public class ChartController {
      */
     @PostMapping("/list")
     public BaseResponse<Page<Chart>> list(@RequestBody ChartQueryRequest searchRequest,
-                             HttpServletRequest request) {
+                                          HttpServletRequest request) {
         System.out.println("searchRequest = " + searchRequest);
         // 判断用户是否登陆
+        if (searchRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         User loginUser = userService.getLoginUser(request);
-        // 获取用的的查询参数
-        String searchText = searchRequest.getName();
-        Long currentPage = searchRequest.getCurrent();
-        Long pageSize = searchRequest.getPageSize();
-        // 判断当前页数是否合法
-        if (currentPage == null || currentPage < 1) {
-            currentPage = 1L;
-        }
-        // 判断每页显示条数是否合法
-        if (pageSize == null || pageSize < 1) {
-            pageSize = 10L;
-        }
-        QueryWrapper<Chart> chartQueryWrapper = new QueryWrapper<>();
-        // 模糊搜索
-        if (searchText != null && !"".equals(searchText)) {
-            chartQueryWrapper.like("name", searchText);
-        }
-        Page<Chart> chartPage = new Page<>();
-        chartPage.setCurrent(currentPage);
-        chartPage.setSize(pageSize);
-        Page<Chart> page = chartService.page(chartPage, chartQueryWrapper);
-        return ResultUtils.success(page);
+        searchRequest.setUserId(loginUser.getId());
+        long current = searchRequest.getCurrent();
+        long size = searchRequest.getPageSize();
+        // 限制爬虫
+        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+        Page<Chart> chartPage = chartService.page(new Page<>(current, size),
+                getQueryWrapper(searchRequest));
+        return ResultUtils.success(chartPage);
+
     }
 
 
@@ -184,6 +212,9 @@ public class ChartController {
     @PostMapping("/chart/gen")
     public BaseResponse<BiResponse> genChartByAI(@RequestPart("file") MultipartFile multipartFile,
                                                  GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+        // 检查用户是否登陆
+        User loginUser = userService.getLoginUser(request);
+
         String name = genChartByAiRequest.getName();
         String goal = genChartByAiRequest.getGoal();
         String chartType = genChartByAiRequest.getChartType();
@@ -201,10 +232,9 @@ public class ChartController {
         final List<String> validFileSuffixList = Arrays.asList("xlsx");
         ThrowUtils.throwIf(!validFileSuffixList.contains(suffix), ErrorCode.PARAMS_ERROR, "文件后缀非法");
 
-        User loginUser = userService.getLoginUser(request);
+
         // 限流判断，每个用户一个限流器
-//        redisLimiterManager.doRateLimit("genChartByAi_" + loginUser.getId());
-        // 无需写 prompt，直接调用现有模型，https://www.yucongming.com，公众号搜【鱼聪明AI】
+        redisLimiterManager.doRateLimit("genChartByAi_" + loginUser.getId());
 //        final String prompt = "你是一个数据分析师和前端开发专家，接下来我会按照以下固定格式给你提供内容：\n" +
 //                "分析需求：\n" +
 //                "{数据分析的需求或者目标}\n" +
@@ -216,13 +246,6 @@ public class ChartController {
 //                "【【【【【\n" +
 //                "{明确的数据分析结论、越详细越好，不要生成多余的注释}";
         long biModelId = CommonConstant.BI_MODEL_ID;
-        // 分析需求：
-        // 分析网站用户的增长情况
-        // 原始数据：
-        // 日期,用户数
-        // 1号,10
-        // 2号,20
-        // 3号,30
 
         // 构造用户输入
         StringBuilder userInput = new StringBuilder();
@@ -245,14 +268,17 @@ public class ChartController {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "AI 生成错误");
         }
         String genChart = splits[1].trim();
+
         String genResult = splits[2].trim();
+
+        // TODO 将chart表进行拆分 将原始数据单独存储起来 避免造成将所有的数据都存到一张表中 造成影响mysql的性能
         // 插入到数据库
         Chart chart = new Chart();
         chart.setName(name);
         chart.setGoal(goal);
         chart.setChartData(csvData);
         chart.setChartType(chartType);
-        chart.setGenResult(genChart);
+        chart.setGenChart(genChart);
         chart.setGenResult(genResult);
         chart.setUserId(loginUser.getId());
         boolean saveResult = chartService.save(chart);

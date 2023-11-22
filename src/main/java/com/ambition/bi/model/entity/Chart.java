@@ -28,36 +28,74 @@ public class Chart implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
+    /**
+     * id
+     */
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    @TableField("`goal`")
-    private String goal;
-
-    @TableField("`name`")
+    /**
+     * 名称
+     */
     private String name;
 
-    @TableField("chartData")
+    /**
+     * 分析目标
+     */
+    private String goal;
+
+    /**
+     * 图表数据
+     */
     private String chartData;
 
-    @TableField("chartType")
+    /**
+     * 图表类型
+     */
     private String chartType;
 
-    @TableField("genResult")
+    /**
+     * 生成的图表数据
+     */
+    private String genChart;
+
+    /**
+     * 生成的分析结论
+     */
     private String genResult;
 
-    @TableField("userId")
+    /**
+     * 任务状态
+     */
+    private String status;
+
+    /**
+     * 执行信息
+     */
+    private String execMessage;
+
+    /**
+     * 用户 id
+     */
     private Long userId;
 
-    @TableField(value = "createTime", fill = FieldFill.INSERT)
+    /**
+     * 创建时间
+     */
     private Date createTime;
 
-    @TableField(value = "updateTime", fill = FieldFill.INSERT_UPDATE)
+    /**
+     * 更新时间
+     */
     private Date updateTime;
 
-    @TableField("isDelete")
+    /**
+     * 是否删除
+     */
     @TableLogic
     private Integer isDelete;
+
+
 
 
 }
