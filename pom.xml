@@ -142,14 +142,14 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-<!-- 鱼聪明 sdk-->
+        <!-- 鱼聪明 sdk-->
         <dependency>
             <groupId>com.yucongming</groupId>
             <artifactId>yucongming-java-sdk</artifactId>
             <version>0.0.3</version>
         </dependency>
 
-<!--        引入转换json的包-->
+        <!--        引入转换json的包-->
         <!-- Jackson 库的核心包 -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -164,12 +164,20 @@
             <version>2.12.5</version>
         </dependency>
 
-<!--        引入redisson-->
+        <!--        引入redisson-->
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
             <version>3.21.3</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.rabbitmq/amqp-client -->
+        <dependency>
+            <groupId>com.rabbitmq</groupId>
+            <artifactId>amqp-client</artifactId>
+            <version>5.17.0</version>
+        </dependency>
+
 
     </dependencies>
 

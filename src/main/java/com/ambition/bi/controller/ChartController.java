@@ -377,6 +377,7 @@ public class ChartController {
         chart.setGoal(goal);
         chart.setChartData(csvData);
         chart.setChartType(chartType);
+        // todo 将状态值改为枚举
         chart.setStatus("wait");
         chart.setUserId(loginUser.getId());
         boolean saveResult = chartService.save(chart);
@@ -406,7 +407,6 @@ public class ChartController {
             updateChartResult.setId(chart.getId());
             updateChartResult.setGenChart(genChart);
             updateChartResult.setGenResult(genResult);
-            // todo 建议定义状态为枚举值
             updateChartResult.setStatus("succeed");
             boolean updateResult = chartService.updateById(updateChartResult);
             if (!updateResult) {
