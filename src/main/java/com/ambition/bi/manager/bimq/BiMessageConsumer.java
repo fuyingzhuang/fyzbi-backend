@@ -6,8 +6,10 @@ package com.ambition.bi.manager.bimq;
  * 消费者
  * 用于接收消息
  */
+
 import com.ambition.bi.common.ErrorCode;
 import com.ambition.bi.constant.BiMqConstant;
+import com.ambition.bi.constant.ChartStateConstant;
 import com.ambition.bi.constant.CommonConstant;
 import com.ambition.bi.exception.BusinessException;
 import com.ambition.bi.manager.AiManager;
@@ -53,7 +55,7 @@ public class BiMessageConsumer {
         // 先修改图表任务状态为 “执行中”。等执行成功后，修改为 “已完成”、保存执行结果；执行失败后，状态修改为 “失败”，记录任务失败信息。
         Chart updateChart = new Chart();
         updateChart.setId(chart.getId());
-        updateChart.setStatus("running");
+        updateChart.setStatus(ChartStateConstant.RUNNING_STATUS);
         boolean b = chartService.updateById(updateChart);
         if (!b) {
             channel.basicNack(deliveryTag, false, false);
@@ -74,8 +76,7 @@ public class BiMessageConsumer {
         updateChartResult.setId(chart.getId());
         updateChartResult.setGenChart(genChart);
         updateChartResult.setGenResult(genResult);
-        // todo 建议定义状态为枚举值
-        updateChartResult.setStatus("succeed");
+        updateChartResult.setStatus(ChartStateConstant.SUCCEED_STATUS);
         boolean updateResult = chartService.updateById(updateChartResult);
         if (!updateResult) {
             channel.basicNack(deliveryTag, false, false);
@@ -87,8 +88,9 @@ public class BiMessageConsumer {
 
     /**
      * 构建用户输入
-     * @param chart
-     * @return
+     *
+     * @param chart 图表
+     * @return 用户输入
      */
     private String buildUserInput(Chart chart) {
         String goal = chart.getGoal();
@@ -113,7 +115,7 @@ public class BiMessageConsumer {
     private void handleChartUpdateError(long chartId, String execMessage) {
         Chart updateChartResult = new Chart();
         updateChartResult.setId(chartId);
-        updateChartResult.setStatus("failed");
+        updateChartResult.setStatus(ChartStateConstant.FAILED_STATUS);
         updateChartResult.setExecMessage("execMessage");
         boolean updateResult = chartService.updateById(updateChartResult);
         if (!updateResult) {

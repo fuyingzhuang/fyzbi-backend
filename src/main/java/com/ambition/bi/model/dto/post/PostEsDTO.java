@@ -21,7 +21,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
  *
  * @author ambition
  **/
-// todo 取消注释开启 ES（须先配置 ES）
+// TODO 取消注释开启 ES（须先配置 ES）
 //@Document(indexName = "post")
 @Data
 public class PostEsDTO implements Serializable {

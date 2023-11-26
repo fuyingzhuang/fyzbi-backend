@@ -13,33 +13,53 @@ spring:
       matching-strategy: ant_path_matcher
   # session 配置
   session:
-    # todo 取消注释开启分布式 session（须先配置 Redis）
+    # TODO 取消注释开启分布式 session（须先配置 Redis）
     # store-type: redis
     # 30 天过期
     timeout: 2592000
   # 数据库配置
-  # todo 需替换配置
+  # TODO 需替换配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/bi
     username: root
     password: w1VJ6kR4
     #   Redis 配置
-    #   todo 需替换配置，然后取消注释
+    #   TODO 需替换配置，然后取消注释
     redis:
       database: 1
       host: localhost
       port: 6379
       timeout: 5000
+    # 配置mongodb
+
+  data:
+    mongodb:
+      #          uri: mongodb://账号:密码@IP:端口/数据库 用如下的配置能够成功的连接到 mongodb
+      uri: mongodb://root:w1VJ6kR4@59.110.55.200:27017/?authSource=admin
+#      用下面的配置 会存在权限问题
+#      host: 59.110.55.200
+#      port: 27017
+#      username: root
+#      password: w1VJ6kR4
+      database: bi_database
+      table: chart
+
+
 
   rabbitmq:
     host: 59.110.55.200
     port: 5672
     username: ambition
     password: w1VJ6kR4
+
+
+
+    #
+
   #      password: 123456
   # Elasticsearch 配置
-  # todo 需替换配置，然后取消注释
+  # TODO 需替换配置，然后取消注释
   #  elasticsearch:
   #    uris: http://localhost:9200
   #    username: root
@@ -70,7 +90,7 @@ mybatis-plus:
 # 微信相关
 wx:
   # 微信公众平台
-  # todo 需替换配置
+  # TODO 需替换配置
   mp:
     token: xxx
     aesKey: xxx
@@ -84,12 +104,12 @@ wx:
         port: 6379
       type: Memory
   # 微信开放平台
-  # todo 需替换配置
+  # TODO 需替换配置
   open:
     appId: xxx
     appSecret: xxx
 # 对象存储
-# todo 需替换配置
+# TODO 需替换配置
 cos:
   client:
     accessKey: xxx
@@ -99,5 +119,5 @@ cos:
 
 yuapi:
   client:
-    access-key: 6xfo6yg9gvll7wwglwti8mje3bhommrw
-    secret-key: wpoa0q4nmpupeztdpjzfetmd9gv9102b
+    access-key: 2c194f2n6gp70qoe743k3gtnn40yjkqp
+    secret-key: aymclodbxigfya29lb0tx8ng8u7b0ccw

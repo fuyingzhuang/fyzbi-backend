@@ -3,7 +3,10 @@ package com.ambition.bi;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -12,7 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  *
  * @author ambition
  */
-// todo 如需开启 Redis，须移除 exclude 中的内容
+// TODO 如需开启 Redis，须移除 exclude 中的内容
 @SpringBootApplication(exclude = {RedisAutoConfiguration.class})
 @MapperScan("com.ambition.bi.mapper")
 @EnableScheduling

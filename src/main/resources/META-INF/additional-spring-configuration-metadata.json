@@ -29,6 +29,11 @@
       "name": "wx.open.appSecret",
       "type": "java.lang.String",
       "description": "Description for wx.open.appSecret."
+    },
+    {
+      "name": "spring.datasource.data.mongodb.host",
+      "type": "java.lang.String",
+      "description": "Description for spring.datasource.data.mongodb.host."
     }
   ]
 }

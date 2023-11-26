@@ -2,23 +2,23 @@ package com.ambition.bi.controller;
 
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.json.JSONObject;
 import com.ambition.bi.common.BaseResponse;
+import com.ambition.bi.common.DeleteRequest;
+import com.ambition.bi.constant.ChartStateConstant;
 import com.ambition.bi.common.ErrorCode;
 import com.ambition.bi.common.ResultUtils;
-import com.ambition.bi.config.ThreadPoolExecutorConfig;
 import com.ambition.bi.constant.CommonConstant;
 import com.ambition.bi.exception.BusinessException;
 import com.ambition.bi.exception.ThrowUtils;
 import com.ambition.bi.manager.AiManager;
 import com.ambition.bi.manager.RedisLimiterManager;
 import com.ambition.bi.manager.bimq.BiMessageProducer;
-import com.ambition.bi.model.dto.chart.ChartAddRequest;
+import com.ambition.bi.manager.mongodb.MongoDBUtil;
 import com.ambition.bi.model.dto.chart.ChartQueryRequest;
 import com.ambition.bi.model.dto.chart.GenChartByAiRequest;
-import com.ambition.bi.model.dto.search.SearchRequest;
 import com.ambition.bi.model.entity.Chart;
 import com.ambition.bi.model.entity.User;
+import com.ambition.bi.model.entity.mongo.AnalyzeRawData;
 import com.ambition.bi.model.vo.BiResponse;
 import com.ambition.bi.service.ChartService;
 import com.ambition.bi.service.UserService;
@@ -26,9 +26,12 @@ import com.ambition.bi.utils.ExcelUtils;
 import com.ambition.bi.utils.SqlUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.InsertOneResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.conversions.Bson;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -74,6 +77,9 @@ public class ChartController {
     @Resource
     private BiMessageProducer biMessageProducer;
 
+
+    @Resource
+    private MongoDBUtil mongoDBUtil;
 
     /**
      * 添加分析模板
@@ -174,8 +180,7 @@ public class ChartController {
         queryWrapper.eq(StringUtils.isNotBlank(chartType), "chartType", chartType);
         queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
         queryWrapper.eq("isDelete", false);
-        queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
-                sortField);
+        queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         return queryWrapper;
     }
 
@@ -188,8 +193,7 @@ public class ChartController {
      * @return 分页数据
      */
     @PostMapping("/list")
-    public BaseResponse<Page<Chart>> list(@RequestBody ChartQueryRequest searchRequest,
-                                          HttpServletRequest request) {
+    public BaseResponse<Page<Chart>> list(@RequestBody ChartQueryRequest searchRequest, HttpServletRequest request) {
         System.out.println("searchRequest = " + searchRequest);
         // 判断用户是否登陆
         if (searchRequest == null) {
@@ -201,8 +205,7 @@ public class ChartController {
         long size = searchRequest.getPageSize();
         // 限制爬虫
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        Page<Chart> chartPage = chartService.page(new Page<>(current, size),
-                getQueryWrapper(searchRequest));
+        Page<Chart> chartPage = chartService.page(new Page<>(current, size), getQueryWrapper(searchRequest));
         return ResultUtils.success(chartPage);
 
     }
@@ -224,8 +227,7 @@ public class ChartController {
     }
 
     @PostMapping("/chart/gen")
-    public BaseResponse<BiResponse> genChartByAI(@RequestPart("file") MultipartFile multipartFile,
-                                                 GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+    public BaseResponse<BiResponse> genChartByAI(@RequestPart("file") MultipartFile multipartFile, GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         // 检查用户是否登陆
         User loginUser = userService.getLoginUser(request);
 
@@ -249,16 +251,6 @@ public class ChartController {
 
         // 限流判断，每个用户一个限流器
         redisLimiterManager.doRateLimit("genChartByAi_" + loginUser.getId());
-//        final String prompt = "你是一个数据分析师和前端开发专家，接下来我会按照以下固定格式给你提供内容：\n" +
-//                "分析需求：\n" +
-//                "{数据分析的需求或者目标}\n" +
-//                "原始数据：\n" +
-//                "{csv格式的原始数据，用,作为分隔符}\n" +
-//                "请根据这两部分内容，按照以下指定格式生成内容（此外不要输出任何多余的开头、结尾、注释）\n" +
-//                "【【【【【\n" +
-//                "{前端 Echarts V5 的 option 配置对象js代码，合理地将数据进行可视化，不要生成任何多余的内容，比如注释}\n" +
-//                "【【【【【\n" +
-//                "{明确的数据分析结论、越详细越好，不要生成多余的注释}";
         long biModelId = CommonConstant.BI_MODEL_ID;
 
         // 构造用户输入
@@ -315,8 +307,7 @@ public class ChartController {
      * @return 结果
      */
     @PostMapping("/gen/async")
-    public BaseResponse<BiResponse> genChartByAiAsync(@RequestPart("file") MultipartFile multipartFile,
-                                                      GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+    public BaseResponse<BiResponse> genChartByAiAsync(@RequestPart("file") MultipartFile multipartFile, GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         String name = genChartByAiRequest.getName();
         String goal = genChartByAiRequest.getGoal();
         String chartType = genChartByAiRequest.getChartType();
@@ -337,25 +328,7 @@ public class ChartController {
         User loginUser = userService.getLoginUser(request);
         // 限流判断，每个用户一个限流器
         redisLimiterManager.doRateLimit("genChartByAi_" + loginUser.getId());
-        // 无需写 prompt，直接调用现有模型，https://www.yucongming.com，公众号搜【鱼聪明AI】
-//        final String prompt = "你是一个数据分析师和前端开发专家，接下来我会按照以下固定格式给你提供内容：\n" +
-//                "分析需求：\n" +
-//                "{数据分析的需求或者目标}\n" +
-//                "原始数据：\n" +
-//                "{csv格式的原始数据，用,作为分隔符}\n" +
-//                "请根据这两部分内容，按照以下指定格式生成内容（此外不要输出任何多余的开头、结尾、注释）\n" +
-//                "【【【【【\n" +
-//                "{前端 Echarts V5 的 option 配置对象js代码，合理地将数据进行可视化，不要生成任何多余的内容，比如注释}\n" +
-//                "【【【【【\n" +
-//                "{明确的数据分析结论、越详细越好，不要生成多余的注释}";
         long biModelId = CommonConstant.BI_MODEL_ID;
-        // 分析需求：
-        // 分析网站用户的增长情况
-        // 原始数据：
-        // 日期,用户数
-        // 1号,10
-        // 2号,20
-        // 3号,30
 
         // 构造用户输入
         StringBuilder userInput = new StringBuilder();
@@ -378,18 +351,17 @@ public class ChartController {
         chart.setGoal(goal);
         chart.setChartData(csvData);
         chart.setChartType(chartType);
-        // todo 将状态值改为枚举
-        chart.setStatus("wait");
+        chart.setStatus(ChartStateConstant.WAIT_STATUS);
         chart.setUserId(loginUser.getId());
         boolean saveResult = chartService.save(chart);
         ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
 
-        // todo 建议处理任务队列满了后，抛异常的情况
+        // TODO 建议处理任务队列满了后，抛异常的情况
         CompletableFuture.runAsync(() -> {
             // 先修改图表任务状态为 “执行中”。等执行成功后，修改为 “已完成”、保存执行结果；执行失败后，状态修改为 “失败”，记录任务失败信息。
             Chart updateChart = new Chart();
             updateChart.setId(chart.getId());
-            updateChart.setStatus("running");
+            updateChart.setStatus(ChartStateConstant.RUNNING_STATUS);
             boolean b = chartService.updateById(updateChart);
             if (!b) {
                 handleChartUpdateError(chart.getId(), "更新图表执行中状态失败");
@@ -408,7 +380,7 @@ public class ChartController {
             updateChartResult.setId(chart.getId());
             updateChartResult.setGenChart(genChart);
             updateChartResult.setGenResult(genResult);
-            updateChartResult.setStatus("succeed");
+            updateChartResult.setStatus(ChartStateConstant.SUCCEED_STATUS);
             boolean updateResult = chartService.updateById(updateChartResult);
             if (!updateResult) {
                 handleChartUpdateError(chart.getId(), "更新图表成功状态失败");
@@ -423,14 +395,14 @@ public class ChartController {
     /**
      * 智能分析（异步消息队列）
      *
-     * @param multipartFile
-     * @param genChartByAiRequest
-     * @param request
-     * @return
+     * @param multipartFile       文件
+     * @param genChartByAiRequest 请求参数
+     * @param request             请求
+     * @return 响应
      */
     @PostMapping("/gen/async/mq")
-    public BaseResponse<BiResponse> genChartByAiAsyncMq(@RequestPart("file") MultipartFile multipartFile,
-                                                        GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+    public BaseResponse<BiResponse> genChartByAiAsyncMq(@RequestPart("file") MultipartFile multipartFile, GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
         String name = genChartByAiRequest.getName();
         String goal = genChartByAiRequest.getGoal();
         String chartType = genChartByAiRequest.getChartType();
@@ -448,7 +420,7 @@ public class ChartController {
         final List<String> validFileSuffixList = Arrays.asList("xlsx", "xls");
         ThrowUtils.throwIf(!validFileSuffixList.contains(suffix), ErrorCode.PARAMS_ERROR, "文件后缀非法");
 
-        User loginUser = userService.getLoginUser(request);
+
         // 限流判断，每个用户一个限流器
         redisLimiterManager.doRateLimit("genChartByAi_" + loginUser.getId());
 
@@ -472,13 +444,21 @@ public class ChartController {
         Chart chart = new Chart();
         chart.setName(name);
         chart.setGoal(goal);
-        chart.setChartData(csvData);
+        // 将csvData 也就是原始数据存入到mongoDB中 而不是chart表中
+        // 避免chart表中数据过大 造成查询效率低下
+        // 而将原始数据保存到mongoDB中 通过chartId进行关联 当用户查询时 通过chartId查询mongoDB中的数据
+        // 分表的思想
+        chart.setChartData(null);
+
         chart.setChartType(chartType);
-        chart.setStatus("wait");
+        chart.setStatus(ChartStateConstant.WAIT_STATUS);
         chart.setUserId(loginUser.getId());
         boolean saveResult = chartService.save(chart);
         ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
         long newChartId = chart.getId();
+        InsertOneResult insertOneResult = mongoDBUtil.getMongoCollection(AnalyzeRawData.class).insertOne(new AnalyzeRawData(newChartId, csvData));
+        System.out.println(insertOneResult);
+        System.out.println(chart.getChartData());
         biMessageProducer.sendMessage(String.valueOf(newChartId));
         BiResponse biResponse = new BiResponse();
         biResponse.setChartId(newChartId);
@@ -489,7 +469,7 @@ public class ChartController {
     private void handleChartUpdateError(long chartId, String execMessage) {
         Chart updateChartResult = new Chart();
         updateChartResult.setId(chartId);
-        updateChartResult.setStatus("failed");
+        updateChartResult.setStatus(ChartStateConstant.FAILED_STATUS);
         updateChartResult.setExecMessage("execMessage");
         boolean updateResult = chartService.updateById(updateChartResult);
         if (!updateResult) {
@@ -498,5 +478,15 @@ public class ChartController {
     }
 
 
+    @PostMapping ("/analyze/data")
+    private BaseResponse<String> getAnalyzeRawData(@RequestBody DeleteRequest deleteRequest) {
+        long id = deleteRequest.getId();
+        System.out.println("id");
+        System.out.println(id);
+        Bson query = Filters.eq("_id", id);
+        AnalyzeRawData analyzeRawData = mongoDBUtil.getMongoCollection(AnalyzeRawData.class).find(query).first();
+        System.out.println(analyzeRawData);
+        return ResultUtils.success("success");
+    }
 }
 
