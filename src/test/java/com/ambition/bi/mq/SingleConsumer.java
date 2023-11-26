@@ -15,7 +15,7 @@ public class SingleConsumer {
         // 创建一个ConnectionFactory,并进行配置 这个对象可以用户创建链接到RabbitMQ服务器的链接
         ConnectionFactory connectionFactory = new ConnectionFactory();
         // 设置RabbitMQ服务器的地址
-        connectionFactory.setHost("59.110.55.200");
+        connectionFactory.setHost("localhost");
 //        设置用户名
         connectionFactory.setUsername("ambition");
 //        设置密码
