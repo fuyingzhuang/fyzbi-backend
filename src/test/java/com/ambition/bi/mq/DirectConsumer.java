@@ -24,7 +24,7 @@ public class DirectConsumer {
         // 创建一个ConnectionFactory,并进行配置 这个对象可以用户创建链接到RabbitMQ服务器的链接
         ConnectionFactory connectionFactory = new ConnectionFactory();
         // 设置RabbitMQ服务器的地址
-        connectionFactory.setHost("localhost");
+        connectionFactory.setHost("59.110.55.200");
 //        设置用户名
         connectionFactory.setUsername("ambition");
 //        设置密码
@@ -46,9 +46,9 @@ public class DirectConsumer {
              * Map<String, Object> arguments 交换机的其他属性
              */
             // 声明交换机
-            channel.exchangeDeclare(EXCHANGE_NAME, "direct", false, false, false, null);
+            channel.exchangeDeclare("direct_queue", "direct", false, false, false, null);
             // 创建队列1
-            String queueName1 = "fyz_queue";
+            String queueName1 = "direct_queue";
             String routingKey1 = "fyz";
             channel.queueDeclare(queueName1, false, false, false, null);
             channel.queueBind(queueName1, EXCHANGE_NAME, routingKey1);
