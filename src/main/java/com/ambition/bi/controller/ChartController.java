@@ -32,6 +32,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.conversions.Bson;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -80,6 +83,10 @@ public class ChartController {
 
     @Resource
     private MongoDBUtil mongoDBUtil;
+
+
+    @Resource
+    private MongoTemplate mongoTemplate;
 
     /**
      * 添加分析模板
@@ -218,12 +225,17 @@ public class ChartController {
      * @param request 请求
      * @return
      */
-    @GetMapping("/delete")
-    public BaseResponse delete(@RequestParam("id") Integer id, HttpServletRequest request) {
+    @PostMapping("/delete")
+    public BaseResponse delete(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
         // 判断用户是否登陆
         User loginUser = userService.getLoginUser(request);
+        Long id = deleteRequest.getId();
         boolean remove = chartService.removeById(id);
-        return ResultUtils.success(remove);
+        if (!remove) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "删除失败");
+        } else {
+            return ResultUtils.success("删除成功");
+        }
     }
 
     @PostMapping("/chart/gen")
@@ -478,15 +490,18 @@ public class ChartController {
     }
 
 
-    @PostMapping ("/analyze/data")
+    @PostMapping("/analyze/data")
     private BaseResponse<String> getAnalyzeRawData(@RequestBody DeleteRequest deleteRequest) {
+
         long id = deleteRequest.getId();
         System.out.println("id");
         System.out.println(id);
-        Bson query = Filters.eq("_id", id);
-        AnalyzeRawData analyzeRawData = mongoDBUtil.getMongoCollection(AnalyzeRawData.class).find(query).first();
+//        使用mongoTemplate 查询bi_database库中的chart表中id为id的数据
+
+        Query query = new Query(Criteria.where("_id").is(id));
+        AnalyzeRawData analyzeRawData = mongoTemplate.findOne(query, AnalyzeRawData.class);
         System.out.println(analyzeRawData);
-        return ResultUtils.success("success");
+        return ResultUtils.success(analyzeRawData.getData().toString());
     }
 }
 
