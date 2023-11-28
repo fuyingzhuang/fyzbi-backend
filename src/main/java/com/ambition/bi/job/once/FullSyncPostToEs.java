@@ -1,9 +1,6 @@
 package com.ambition.bi.job.once;
 
-import com.ambition.bi.esdao.PostEsDao;
-import com.ambition.bi.model.dto.post.PostEsDTO;
 import com.ambition.bi.model.entity.Post;
-import com.ambition.bi.service.PostService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,28 +19,10 @@ import org.springframework.boot.CommandLineRunner;
 //@Component
 @Slf4j
 public class FullSyncPostToEs implements CommandLineRunner {
-
-    @Resource
-    private PostService postService;
-
-    @Resource
-    private PostEsDao postEsDao;
-
     @Override
-    public void run(String... args) {
-        List<Post> postList = postService.list();
-        if (CollectionUtils.isEmpty(postList)) {
-            return;
-        }
-        List<PostEsDTO> postEsDTOList = postList.stream().map(PostEsDTO::objToDto).collect(Collectors.toList());
-        final int pageSize = 500;
-        int total = postEsDTOList.size();
-        log.info("FullSyncPostToEs start, total {}", total);
-        for (int i = 0; i < total; i += pageSize) {
-            int end = Math.min(i + pageSize, total);
-            log.info("sync from {} to {}", i, end);
-            postEsDao.saveAll(postEsDTOList.subList(i, end));
-        }
-        log.info("FullSyncPostToEs end, total {}", total);
+    public void run(String... args) throws Exception {
+
     }
+
+
 }

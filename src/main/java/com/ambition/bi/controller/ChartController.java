@@ -221,9 +221,8 @@ public class ChartController {
     /**
      * 删除图表信息
      *
-     * @param id      图表id
      * @param request 请求
-     * @return
+     * @return 是否删除成功
      */
     @PostMapping("/delete")
     public BaseResponse delete(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
@@ -489,18 +488,27 @@ public class ChartController {
         }
     }
 
+    /**
+     * 根据您的描述，当您将 getAnalyzeRawData 方法的修饰符设为 private 时，
+     * 无法访问 mongoDBUtil 变量并且它的值为 null。而当您将修饰符设为 public 时，
+     * 您可以正确访问到 mongoDBUtil 变量并且它具有具体的值。
+     * <p>
+     * 这种行为可能是由于不同的访问级别造成的。当方法被声明为 private 时，
+     * 它只能在当前类中访问。这意味着，如果 mongoDBUtil 是一个类的成员变量，
+     * private 方法无法直接访问它，除非在当前类的其他方法中对它进行初始化或赋值。
+     * 否则，在 private 方法中访问该成员变量将得到 null 值。
+     * <p>
+     *
+     * @param deleteRequest 请求
+     * @return 响应
+     */
 
     @PostMapping("/analyze/data")
-    private BaseResponse<String> getAnalyzeRawData(@RequestBody DeleteRequest deleteRequest) {
+    public BaseResponse<String> getAnalyzeRawData(@RequestBody DeleteRequest deleteRequest) {
 
         long id = deleteRequest.getId();
-        System.out.println("id");
-        System.out.println(id);
-//        使用mongoTemplate 查询bi_database库中的chart表中id为id的数据
-
-        Query query = new Query(Criteria.where("_id").is(id));
-        AnalyzeRawData analyzeRawData = mongoTemplate.findOne(query, AnalyzeRawData.class);
-        System.out.println(analyzeRawData);
+        Bson query = Filters.eq("_id", id);
+        AnalyzeRawData analyzeRawData = mongoDBUtil.getMongoCollection(AnalyzeRawData.class).find(query).first();
         return ResultUtils.success(analyzeRawData.getData().toString());
     }
 }

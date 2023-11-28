@@ -47,8 +47,6 @@ public class MongoDB {
         long id = 1L; // 要查询的id
         // 注意查询条件是_id 而不是id
         Bson query = Filters.eq("_id", id);
-        System.out.println("mongoDBUtil");
-        System.out.println(mongoDBUtil);
 
         AnalyzeRawData analyzeRawData = mongoDBUtil.getMongoCollection(AnalyzeRawData.class).find(query).first();
         System.out.println(analyzeRawData);

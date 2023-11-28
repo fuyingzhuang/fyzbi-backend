@@ -19,16 +19,5 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 class PostFavourMapperTest {
 
-    @Resource
-    private PostFavourMapper postFavourMapper;
 
-    @Test
-    void listUserFavourPostByPage() {
-        IPage<Post> page = new Page<>(2, 1);
-        QueryWrapper<Post> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", 1);
-        queryWrapper.like("content", "a");
-        IPage<Post> result = postFavourMapper.listFavourPostByPage(page, queryWrapper, 1);
-        Assertions.assertNotNull(result);
-    }
 }

@@ -36,7 +36,7 @@ public class MongoDBUtil {
         ));
     }
 
-    public <T> MongoCollection<T> getMongoCollection( Class<T> clazz) {
+    public <T> MongoCollection<T> getMongoCollection(Class<T> clazz) {
         MongoDatabase mongoDatabase = getMongoDatabase(mongoDBName);
         return mongoDatabase.getCollection(mongoTable, clazz);
     }
