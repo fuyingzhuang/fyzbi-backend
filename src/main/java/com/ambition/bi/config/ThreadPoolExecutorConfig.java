@@ -26,8 +26,8 @@ public class ThreadPoolExecutorConfig {
                 return thread;
             }
         };
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(2, 4, 100, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(4), threadFactory);
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 100, 100, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(1000), threadFactory);
         return threadPoolExecutor;
     }
 }
