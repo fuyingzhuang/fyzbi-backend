@@ -33,20 +33,7 @@ spring:
       timeout: 5000
     # 配置mongodb
 
-  data:
-    mongodb:
-      #          uri: mongodb://账号:密码@IP:端口/数据库 用如下的配置能够成功的连接到 mongodb
 
-      database: bi_database
-      table: chart
-
-
-
-  rabbitmq:
-    host: 59.110.55.200
-    port: 5672
-    username: ambition
-    password: w1VJ6kR4
 
 
 
